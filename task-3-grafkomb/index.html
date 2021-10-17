@@ -46,8 +46,8 @@
 
     let onMouseClick = function (e) {
         clicked = 0;
-        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = - (e.clientY / window.innerHeight) * 2 + 1;
+        mouse.x = (e.clientX / window.innerWidth) * 2-1;
+        mouse.y = - (e.clientY / window.innerHeight) * 2+1;
         rayCast.setFromCamera(mouse, camera);
 
         let intersects = rayCast.intersectObjects(scene.children, false);
