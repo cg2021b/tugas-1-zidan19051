@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Sphere Score</title>
+    <script src="js/three.min.js"></script>
+    <script src="js/controls/OrbitControls.js"></script>
+</head>
+
+<body>
+    <div id="score">0</div>
+</body>
+
+</html>
+
+<script>
+    let scene, camera, renderer, light, rayCast, mouse, color;
+    let current = document.getElementById("score");
+    let score = 0, i = 0, selected = [], original = [];
+
+    function getRandomBetween(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    let colors =
+        [
+            "rgb(115, 83, 186)",
+            "rgb(219, 208, 83)",
+            "rgb(170, 255, 229)",
+            "rgb(146, 20, 12)"
+        ];
+
+    let createSphere = function () {
+        let color = colors[Math.floor(getRandomBetween(1, 5))];
+        let material = new THREE.MeshToonMaterial({ color: color });
+        let geometry = new THREE.SphereGeometry(5, 32, 16);
+        sphere = new THREE.Mesh(geometry, material);
+        sphere.position.x = getRandomBetween(-50, 50);
+        sphere.position.y = getRandomBetween(-50, 50);
+        sphere.position.z = getRandomBetween(-50, 50);
+        scene.add(sphere);
+    }
+
+    let onMouseClick = function (e) {
+        clicked = 0;
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = - (e.clientY / window.innerHeight) * 2 + 1;
+        rayCast.setFromCamera(mouse, camera);
+
+        let intersects = rayCast.intersectObjects(scene.children, false);
+        if (intersects[0]) {
+            let firstObject = intersects[0].object;
+            if (selected.length > 0) {
+                if (firstObject.uuid === selected[0].uuid) {
+                    firstObject.material.emissive.setHex(0x000000);
+                    selected = [];
+                    originalColors = [];
+                    return;
+                }
+            }
+            selected.push(firstObject);
+            original.push(firstObject.material.color.getHex());
+            if (selected.length > 1) {
+                calculate();
+            }
+            if (selected.length == 1) {
+                if (clicked == 1) {
+                    selected.pop(firstObject);
+                    original.pop(firstObject.material.color.getHex());
+                }
+                clicked = 1;
+            }
+        }
+    }
+
+    function disposed(objek) {
+        objek.geometry.dispose();
+        objek.material.dispose();
+        scene.remove(objek);
+        renderer.renderLists.dispose();
+    }
+
+    let calculate = function () {
+        if (selected[0].material.color.getHex() === selected[1].material.color.getHex()) {
+            selected.forEach(object => {
+                disposed(object);
+            });
+            score += 1;
+        }
+        else {
+            score -= 1;
+        }
+        current.innerHTML = score;
+        original.length = 0;
+        selected.length = 0;
+    }
+
+    let init = function () {
+        // create the scene
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x747474);
+        // set the camera
+        camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.set(0, 0, 30);
+        // set the light
+        light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(0, 0, 0);
+        scene.add(light);
+        //set the raycast
+        rayCast = new THREE.Raycaster();
+        mouse = new THREE.Vector2();
+        mouse.x = mouse.y = -1;
+        while (i < 20) {createSphere(); i++;}
+        document.addEventListener("click", onMouseClick);
+        // set the renderer
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        // set orbit controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        renderer.render(scene, camera, controls);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    };
+
+    let clock = new THREE.Clock(), flag = 0, speed = 0.03, base = 0.03;
+    let mainLoop = function () {
+        if (scene.children.length >= 20) {flag = 0; speed = base; current.innerHTML = score;}
+        else {flag += speed;}
+        
+        if (flag > 1) {createSphere(); flag = 0; speed += 0.03;}
+        const elapsedTime = clock.getElapsedTime();
+        
+        if (selected.length > 0) {selected[0].material.emissive.setHex(elapsedTime % 0.5>=0.25? original[0]:0x000000);        }
+        renderer.render(scene, camera)
+        requestAnimationFrame(mainLoop)
+    };
+    init();
+    mainLoop();
+</script>
+<style>
+    #score {
+        position: absolute;
+        font-size: 3em;
+        top: 750px;
+        right: 30px;
+    }
+</style>
