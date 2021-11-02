@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Iron Man in the Dusk</title>
+</head>
+
+<body>
+    <canvas class="c"></canvas>
+</body>
+
+</html>
+
+<script type="module">
+    // import
+    import * as THREE from './js/three.module.js';
+    import { OrbitControls } from './js/OrbitControls.js';
+    import { GLTFLoader } from './js/GLTFLoader.js';
+
+    const canvas = document.querySelector('canvas.c') // create the canvas
+    const scene = new THREE.Scene(); // create the scene
+    const sizes = // set the size
+    {
+        width: window.innerWidth,
+        height: window.innerHeight
+    }
+
+    const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 100); // set the camera & its position
+    camera.position.x = 5;
+    camera.position.y = 1;
+    camera.position.z = 10;
+    scene.add(camera);
+
+    const controls = new OrbitControls(camera, canvas); // create the orbit control
+
+    const sky = new THREE.TextureLoader(); // make the texture of the sky
+    const duskSky = sky.load(['textures/dusk.jpg']); // dusk sky
+    scene.background = duskSky;
+
+    const textureLoader = new THREE.TextureLoader(); // make the texture of the plateu
+    const sand = textureLoader.load('./textures/sand.jpg'); // sand
+    sand.wrapS = THREE.RepeatWrapping;
+    sand.wrapT = THREE.RepeatWrapping;
+    const repeats = 9999;
+    sand.repeat.set(repeats, repeats);
+
+    let earth = new THREE.BoxGeometry(99999, 99999); // box earth
+    let material = new THREE.MeshLambertMaterial // earth material
+        ({
+            map: sand
+        });
+
+    let plateu = new THREE.Mesh(earth, material);
+    plateu.rotation.x = Math.PI / 2;
+    plateu.position.y = -5.5;
+    plateu.receiveShadow = true;
+    scene.add(plateu);
+
+    const loader = new GLTFLoader() // load the object of iron man
+    loader.load('./objects/scene.gltf', function (gltf) 
+    {
+        const root = gltf.scene;
+        root.position.y = -5;
+        root.scale.set(4, 4, 4);
+        scene.add(root);
+
+        root.traverse(n => 
+        {
+            if (n.isMesh) 
+            {
+                n.castShadow = true;
+                n.receiveShadow = true;
+            }
+        });
+    })
+
+    const pointLight = new THREE.PointLight("rgb(255, 255, 255)", 4); // define the light
+    pointLight.position.set(-100, 200, 100);
+    scene.add(pointLight);
+
+    const brightWorld = new THREE.DirectionalLight(); // define the light
+    brightWorld.position.set(500, 500, -500);
+    brightWorld.castShadow = true;
+    brightWorld.intensity = 2;
+    brightWorld.shadow.mapSize.width = 1024;
+    brightWorld.shadow.mapSize.height = 1024;
+    brightWorld.shadow.camera.near = 250;
+    brightWorld.shadow.camera.far = 1000;
+    brightWorld.shadow.camera.left = -50;
+    brightWorld.shadow.camera.right = 50;
+    brightWorld.shadow.camera.top = 50;
+    brightWorld.shadow.camera.bottom = -50;
+    scene.add(brightWorld);
+
+    window.addEventListener('resize', () => 
+    {
+        sizes.width = window.innerWidth;
+        sizes.height = window.innerHeight;
+
+        camera.aspect = sizes.width / sizes.height;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(sizes.width, sizes.height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    })
+
+    const renderer = new THREE.WebGLRenderer
+        ({
+            canvas: canvas
+        })
+    renderer.setSize(sizes.width, sizes.height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.render(scene, camera, controls);
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.gammaOutput = true;
+
+    const animate = () => 
+    {
+        controls.update();
+        renderer.render(scene, camera);
+        window.requestAnimationFrame(animate);
+    }
+    animate();
+</script>
+
+<style>
+    * 
+    {
+        margin: 0;
+        padding: 0;
+    }
+
+    .c 
+    {
+        position: fixed;
+        top: 0;
+        left: 0;
+        outline: none;
+    }
+</style>
